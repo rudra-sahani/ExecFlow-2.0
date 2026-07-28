@@ -62,7 +62,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // Trust proxy for rate limiting and reverse proxy support
 app.set('trust proxy', true);
@@ -77,7 +77,26 @@ app.use(
 
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const allowed = process.env.FRONTEND_URL || process.env.CORS_ORIGIN;
+      if (allowed) {
+        const origins = allowed.split(',').map((o) => o.trim());
+        if (origins.includes(origin) || origins.includes('*')) {
+          return callback(null, true);
+        }
+      }
+
+      // Allow all Vercel frontend deployment origins (*.vercel.app) and local development
+      if (origin.endsWith('.vercel.app') || process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+
+      // Default fallback
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
