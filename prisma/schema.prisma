@@ -1,0 +1,421 @@
+// Prisma schema for ExecFlow Enterprise AI Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  id                String            @id @default(uuid())
+  email             String            @unique
+  fullName          String?
+  avatarUrl         String?
+  role              String            @default("MEMBER")
+  department        String?
+  jobTitle          String?
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  workspaceMembers  WorkspaceMember[]
+  tasksAssigned     TaskAssignment[]  @relation("AssignedTo")
+  tasksCreated      Task[]            @relation("CreatedBy")
+  approvals         Approval[]        @relation("Approver")
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  activityLogs      ActivityLog[]
+
+  @@index([email])
+  @@map("profiles")
+}
+
+model Organization {
+  id         String      @id @default(uuid())
+  name       String
+  slug       String      @unique
+  domain     String?
+  logoUrl    String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  workspaces Workspace[]
+
+  @@map("organizations")
+}
+
+model Workspace {
+  id                  String               @id @default(uuid())
+  organizationId      String
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                String
+  slug                String               @unique
+  description         String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  members             WorkspaceMember[]
+  meetings            Meeting[]
+  tasks               Task[]
+  automationWorkflows AutomationWorkflow[]
+  knowledgeDocuments KnowledgeDocument[]
+  memories            Memory[]
+  settings            Setting[]
+
+  @@index([organizationId])
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  profileId   String
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  role        String    @default("MEMBER") // ADMIN, MEMBER, VIEWER
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, profileId])
+  @@index([workspaceId])
+  @@index([profileId])
+  @@map("workspace_members")
+}
+
+model Meeting {
+  id              String           @id @default(uuid())
+  workspaceId     String
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  scheduledStart  DateTime
+  scheduledEnd    DateTime?
+  actualStart     DateTime?
+  actualEnd       DateTime?
+  status          String           @default("SCHEDULED") // SCHEDULED, RECORDING, PROCESSING, COMPLETED, CANCELLED
+  meetingUrl      String?
+  recordingUrl    String?
+  audioUrl        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  files           MeetingFile[]
+  transcripts     Transcript[]
+  aiSummary       AiSummary?
+  decisions       Decision[]
+  risks           Risk[]
+  actionItems     ActionItem[]
+  tasks           Task[]
+  approvals       Approval[]
+  activityLogs    ActivityLog[]
+
+  @@index([workspaceId])
+  @@index([status])
+  @@index([scheduledStart])
+  @@map("meetings")
+}
+
+model MeetingFile {
+  id          String   @id @default(uuid())
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileSize    Int
+  fileType    String
+  fileUrl     String
+  bucketName  String   @default("meetings")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([meetingId])
+  @@map("meeting_files")
+}
+
+model Transcript {
+  id             String          @id @default(uuid())
+  meetingId      String          @unique
+  meeting        Meeting         @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  fullText       String
+  language       String          @default("en")
+  confidence     Float           @default(0.95)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  speakerSegments SpeakerSegment[]
+
+  @@index([meetingId])
+  @@map("transcripts")
+}
+
+model SpeakerSegment {
+  id           String     @id @default(uuid())
+  transcriptId String
+  transcript   Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  speakerName  String
+  speakerEmail String?
+  startTime    Float
+  endTime      Float
+  text         String
+  confidence   Float      @default(0.95)
+  createdAt    DateTime   @default(now())
+
+  @@index([transcriptId])
+  @@map("speaker_segments")
+}
+
+model AiSummary {
+  id               String   @id @default(uuid())
+  meetingId        String   @unique
+  meeting          Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  executiveSummary String
+  keyTakeaways     String[]
+  sentimentScore   Float    @default(0.8)
+  confidenceScore  Float    @default(0.96)
+  modelName        String   @default("gemini-2.5-flash")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("ai_summaries")
+}
+
+model Decision {
+  id            String   @id @default(uuid())
+  meetingId     String
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  decision      String
+  category      String   @default("GENERAL")
+  decisionMaker String?
+  evidence      String?
+  confidence    Float    @default(0.9)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([meetingId])
+  @@map("decisions")
+}
+
+model Risk {
+  id            String   @id @default(uuid())
+  meetingId     String
+  meeting       Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  risk          String
+  severity      String   @default("MEDIUM") // HIGH, MEDIUM, LOW
+  trend         String   @default("STABLE")
+  owner         String?
+  mitigation    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([meetingId])
+  @@map("risks")
+}
+
+model ActionItem {
+  id          String   @id @default(uuid())
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  assignee    String?
+  dueDate     DateTime?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([meetingId])
+  @@map("action_items")
+}
+
+model Task {
+  id              String           @id @default(uuid())
+  workspaceId     String
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  meetingId       String?
+  meeting         Meeting?         @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  createdById     String
+  createdBy       Profile          @relation("CreatedBy", fields: [createdById], references: [id])
+  title           String
+  description     String?
+  priority        String           @default("MEDIUM") // HIGH, MEDIUM, LOW, URGENT
+  status          String           @default("TODO") // TODO, IN_PROGRESS, REVIEW, COMPLETED, BLOCKED
+  dueDate         DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  assignments     TaskAssignment[]
+  approvals       Approval[]
+
+  @@index([workspaceId])
+  @@index([meetingId])
+  @@index([createdById])
+  @@index([status])
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  id         String   @id @default(uuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  profileId  String
+  profile    Profile  @relation("AssignedTo", fields: [profileId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@unique([taskId, profileId])
+  @@index([taskId])
+  @@index([profileId])
+  @@map("task_assignments")
+}
+
+model Approval {
+  id          String    @id @default(uuid())
+  meetingId   String?
+  meeting     Meeting?  @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  taskId      String?
+  task        Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  approverId  String
+  approver    Profile   @relation("Approver", fields: [approverId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  payload     String?   // JSON payload for automated system dispatch
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([meetingId])
+  @@index([taskId])
+  @@index([approverId])
+  @@map("approvals")
+}
+
+model AutomationWorkflow {
+  id          String        @id @default(uuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  triggerType String        // e.g., MEETING_COMPLETED, RISK_DETECTED, TASK_CREATED
+  isActive    Boolean       @default(true)
+  nodesJson   String        // JSON array of nodes
+  edgesJson   String        // JSON array of edges
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  runs        WorkflowRun[]
+
+  @@index([workspaceId])
+  @@map("automation_workflows")
+}
+
+model WorkflowRun {
+  id         String             @id @default(uuid())
+  workflowId String
+  workflow   AutomationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  status     String             @default("RUNNING") // RUNNING, SUCCESS, FAILED
+  logs       String?
+  startedAt  DateTime           @default(now())
+  finishedAt DateTime?
+
+  @@index([workflowId])
+  @@map("workflow_runs")
+}
+
+model KnowledgeDocument {
+  id          String               @id @default(uuid())
+  workspaceId String
+  workspace   Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title       String
+  content     String
+  fileUrl     String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  embeddings  KnowledgeEmbedding[]
+
+  @@index([workspaceId])
+  @@map("knowledge_documents")
+}
+
+model KnowledgeEmbedding {
+  id         String            @id @default(uuid())
+  documentId String
+  document   KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  chunkText  String
+  embedding  String            // Store vector string representation
+  createdAt  DateTime          @default(now())
+
+  @@index([documentId])
+  @@map("knowledge_embeddings")
+}
+
+model Memory {
+  id                 String    @id @default(uuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  category           String    // DECISION, RISK, ACTION_ITEM, INSIGHT, NOTE
+  content            String
+  sourceMeetingId    String?
+  sourceMeetingTitle String?
+  relevanceScore     Float     @default(1.0)
+  tags               String[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([category])
+  @@map("memories")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  linkUrl   String?
+  createdAt DateTime @default(now())
+
+  @@index([profileId])
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  profileId   String?
+  profile     Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  meetingId   String?
+  meeting     Meeting? @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  action      String
+  details     String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([profileId])
+  @@index([meetingId])
+  @@map("activity_logs")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  profileId  String?
+  profile    Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  resource   String
+  action     String
+  payload    String?
+  createdAt  DateTime @default(now())
+
+  @@index([profileId])
+  @@map("audit_logs")
+}
+
+model Setting {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  key         String
+  value       String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, key])
+  @@index([workspaceId])
+  @@map("settings")
+}

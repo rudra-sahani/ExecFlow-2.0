@@ -1,0 +1,6 @@
+{
+  "name": "ExecFlow - AI Meeting Intelligence Platform",
+  "description": "ExecFlow is an enterprise-grade AI-powered Meeting Intelligence and Execution Platform built with React, TypeScript, TanStack Query, Zustand, Tailwind CSS, and Express backend services.",
+  "requestFramePermissions": ["microphone", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

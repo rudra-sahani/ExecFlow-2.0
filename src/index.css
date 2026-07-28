@@ -1,0 +1,132 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+@layer base {
+  :root {
+    --font-heading: 'Space Grotesk', 'Inter', sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+  html {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #050505;
+    color: #ffffff;
+    color-scheme: dark;
+  }
+
+  html.light {
+    background-color: #F8FAF6 !important;
+    color: #111827 !important;
+    color-scheme: light !important;
+  }
+
+  html.light body {
+    background-color: #F8FAF6 !important;
+    color: #111827 !important;
+  }
+
+  html.light ::-webkit-scrollbar-track {
+    background: #F8FAF6;
+  }
+
+  html.light ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+  }
+
+  /* Light mode container and background adjustments */
+  html.light .bg-\[\#050505\],
+  html.light .bg-\[\#0B0C0E\],
+  html.light .bg-\[\#0F1110\] {
+    background-color: #F8FAF6 !important;
+  }
+
+  html.light .bg-\[\#111315\],
+  html.light .bg-\[\#16181a\],
+  html.light .bg-\[\#1f2226\] {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+  }
+
+  html.light .border-zinc-800,
+  html.light .border-zinc-800\/50,
+  html.light .border-zinc-800\/80,
+  html.light .border-zinc-700 {
+    border-color: #E2E8F0 !important;
+  }
+
+  html.light .text-white {
+    color: #0F172A !important;
+  }
+
+  html.light .text-zinc-400,
+  html.light .text-zinc-500 {
+    color: #64748B !important;
+  }
+
+  html.light .text-zinc-300 {
+    color: #334155 !important;
+  }
+
+  html.light input,
+  html.light select,
+  html.light textarea {
+    background-color: #FFFFFF !important;
+    color: #0F172A !important;
+    border-color: #CBD5E1 !important;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  body {
+    background-color: #050505;
+    color: #ffffff;
+    min-height: 100vh;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #050505;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #1f2421;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #7CB518;
+  }
+}
+
+/* Custom glow and utility classes */
+.glow-olive {
+  box-shadow: 0 0 30px -5px rgba(124, 181, 24, 0.2);
+}
+
+.glow-olive-sm {
+  box-shadow: 0 0 15px -3px rgba(124, 181, 24, 0.15);
+}
+
+.border-olive {
+  border-color: rgba(124, 181, 24, 0.15);
+}
+
+.border-olive-hover:hover {
+  border-color: rgba(124, 181, 24, 0.35);
+}
+
