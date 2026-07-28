@@ -1,7 +1,6 @@
 import express, { Response } from 'express';
 import path from 'path';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import cors from 'cors';
@@ -57,9 +56,6 @@ import { authLimiter, strictLimiter } from './server/middleware/rateLimit.middle
 import { requestLogger } from './server/middleware/requestLogger.middleware';
 import { errorHandler } from './server/middleware/errorHandler.middleware';
 import { logger } from './server/config/logger';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
